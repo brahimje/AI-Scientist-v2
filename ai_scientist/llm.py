@@ -33,6 +33,8 @@ AVAILABLE_LLMS = [
     # DeepSeek Models
     "deepseek-coder-v2-0724",
     "deepcoder-14b",
+    "deepseek-v4-flash",
+    "deepseek-v4-pro",
     # Llama 3 models
     "llama3.1-405b",
     # Anthropic Claude models via Amazon Bedrock
@@ -137,6 +139,23 @@ def get_batch_responses_from_llm(
         new_msg_history = msg_history + [{"role": "user", "content": msg}]
         response = client.chat.completions.create(
             model="deepseek-coder",
+            messages=[
+                {"role": "system", "content": system_message},
+                *new_msg_history,
+            ],
+            temperature=temperature,
+            max_tokens=MAX_NUM_TOKENS,
+            n=n_responses,
+            stop=None,
+        )
+        content = [r.message.content for r in response.choices]
+        new_msg_history = [
+            new_msg_history + [{"role": "assistant", "content": c}] for c in content
+        ]
+    elif model.startswith("deepseek-"):
+        new_msg_history = msg_history + [{"role": "user", "content": msg}]
+        response = client.chat.completions.create(
+            model=model,
             messages=[
                 {"role": "system", "content": system_message},
                 *new_msg_history,
@@ -361,6 +380,21 @@ def get_response_from_llm(
         )
         content = response.choices[0].message.content
         new_msg_history = new_msg_history + [{"role": "assistant", "content": content}]
+    elif model.startswith("deepseek-"):
+        new_msg_history = msg_history + [{"role": "user", "content": msg}]
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_message},
+                *new_msg_history,
+            ],
+            temperature=temperature,
+            max_tokens=MAX_NUM_TOKENS,
+            n=1,
+            stop=None,
+        )
+        content = response.choices[0].message.content
+        new_msg_history = new_msg_history + [{"role": "assistant", "content": content}]
     elif model == "deepcoder-14b":
         new_msg_history = msg_history + [{"role": "user", "content": msg}]
         try:
@@ -501,8 +535,8 @@ def create_client(model) -> tuple[Any, str]:
     elif "o1" in model or "o3" in model:
         print(f"Using OpenAI API with model {model}.")
         return openai.OpenAI(), model
-    elif model == "deepseek-coder-v2-0724":
-        print(f"Using OpenAI API with {model}.")
+    elif model == "deepseek-coder-v2-0724" or model.startswith("deepseek-"):
+        print(f"Using DeepSeek API with {model}.")
         return (
             openai.OpenAI(
                 api_key=os.environ["DEEPSEEK_API_KEY"],
