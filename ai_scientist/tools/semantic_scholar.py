@@ -53,6 +53,7 @@ class SemanticScholarSearchTool(BaseTool):
         backoff.expo,
         (requests.exceptions.HTTPError, requests.exceptions.ConnectionError),
         on_backoff=on_backoff,
+        max_tries=3,
     )
     def search_for_papers(self, query: str) -> Optional[List[Dict]]:
         if not query:
@@ -72,6 +73,11 @@ class SemanticScholarSearchTool(BaseTool):
             },
         )
         print(f"Response Status Code: {rsp.status_code}")
+        if rsp.status_code == 429:
+            print("⚠️ Semantic Scholar rate limit hit (no API key). Skipping search gracefully.")
+            print("   💡 Get a free key at: https://www.semanticscholar.org/product/api")
+            print("   💡 Or add S2_API_KEY to Kaggle Secrets for higher limits.")
+            return [{"title": "(Rate limited - no results)", "paperId": None}]
         print(f"Response Content: {rsp.text[:500]}")
         rsp.raise_for_status()
         results = rsp.json()
