@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 
 from .utils import FunctionSpec, OutputType, opt_messages_to_list, backoff_create
@@ -22,6 +23,12 @@ def get_ai_client(model: str, max_retries=2) -> openai.OpenAI:
         client = openai.OpenAI(
             base_url="http://localhost:11434/v1", 
             max_retries=max_retries
+        )
+    elif model.startswith("deepseek-"):
+        client = openai.OpenAI(
+            api_key=os.environ["DEEPSEEK_API_KEY"],
+            base_url="https://api.deepseek.com",
+            max_retries=max_retries,
         )
     else:
         client = openai.OpenAI(max_retries=max_retries)
