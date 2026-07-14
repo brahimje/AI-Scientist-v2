@@ -17,6 +17,10 @@ AVAILABLE_VLMS = [
     "gpt-4o-mini-2024-07-18",
     "o3-mini",
 
+    # DeepSeek models (text-only, no vision - VLM tasks will skip gracefully)
+    "deepseek-v4-flash",
+    "deepseek-v4-pro",
+
     # Ollama models
 
     # llama4
@@ -114,6 +118,17 @@ def make_vlm_call(client, model, temperature, system_message, prompt):
             temperature=temperature,
             max_tokens=MAX_NUM_TOKENS,
         )
+    elif model.startswith("deepseek-"):
+        return client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_message},
+                *prompt,
+            ],
+            temperature=temperature,
+            max_tokens=MAX_NUM_TOKENS,
+            thinking={"type": "disabled"},
+        )
     else:
         raise ValueError(f"Model {model} not supported.")
 
@@ -209,6 +224,15 @@ def create_client(model: str) -> tuple[Any, str]:
             api_key=os.environ.get("OLLAMA_API_KEY", ""),
             base_url="http://localhost:11434/v1"
         ), model
+    elif model.startswith("deepseek-"):
+        print(f"Using DeepSeek API with {model} (text-only mode).")
+        return (
+            openai.OpenAI(
+                api_key=os.environ["DEEPSEEK_API_KEY"],
+                base_url="https://api.deepseek.com",
+            ),
+            model,
+        )
     else:
         raise ValueError(f"Model {model} not supported.")
 
