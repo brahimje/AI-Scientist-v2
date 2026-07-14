@@ -356,7 +356,10 @@ def overall_summarize(journals, cfg=None):
                 total=len(list(journals)),
             )
         )
-        draft_summary, baseline_summary, research_summary, ablation_summary = results
+        # Pad results to always have 4 entries (handles early termination)
+        while len(results) < 4:
+            results.append({})
+        draft_summary, baseline_summary, research_summary, ablation_summary = results[:4]
 
     return draft_summary, baseline_summary, research_summary, ablation_summary
 
