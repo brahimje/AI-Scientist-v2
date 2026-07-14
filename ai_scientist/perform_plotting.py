@@ -90,10 +90,16 @@ def extract_code_snippet(text: str) -> str:
     """
     Look for a Python code block in triple backticks in the LLM response.
     Return only that code. If no code block is found, return the entire text.
+    Also strips any remaining markdown code fences as a safety measure.
     """
+    # Try to find code between triple backticks
     pattern = r"```(?:python)?(.*?)```"
     matches = re.findall(pattern, text, flags=re.DOTALL)
-    return matches[0].strip() if matches else text.strip()
+    code = matches[0].strip() if matches else text.strip()
+    # Safety: remove any leftover ```python or ``` fences
+    code = re.sub(r"^```(?:python)?\s*", "", code)
+    code = re.sub(r"\s*```$", "", code)
+    return code.strip()
 
 
 def run_aggregator_script(

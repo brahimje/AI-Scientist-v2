@@ -264,7 +264,9 @@ if __name__ == "__main__":
 
     aggregate_plots(base_folder=idea_dir, model=args.model_agg_plots)
 
-    shutil.rmtree(osp.join(idea_dir, "experiment_results"))
+    exp_results_dir = osp.join(idea_dir, "experiment_results")
+    if osp.exists(exp_results_dir):
+        shutil.rmtree(exp_results_dir)
 
     save_token_tracker(idea_dir)
 
