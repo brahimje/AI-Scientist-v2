@@ -37,7 +37,7 @@ agent:
   type: parallel
   num_workers: 4
   stages:
-    stage1_max_iters: 20
+    stage1_max_iters: 30
     stage2_max_iters: 12
     stage3_max_iters: 12
     stage4_max_iters: 18
