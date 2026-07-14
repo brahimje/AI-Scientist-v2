@@ -127,7 +127,7 @@ def make_vlm_call(client, model, temperature, system_message, prompt):
             ],
             temperature=temperature,
             max_tokens=MAX_NUM_TOKENS,
-            thinking={"type": "disabled"},
+            extra_body={"thinking": {"type": "disabled"}},
         )
     else:
         raise ValueError(f"Model {model} not supported.")

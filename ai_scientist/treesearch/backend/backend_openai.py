@@ -56,9 +56,9 @@ def query(
 
     # DeepSeek V4 Flash has thinking mode enabled by default,
     # which conflicts with tool_choice (function calling).
-    # Disable it explicitly to avoid API errors.
+    # Disable it explicitly via extra_body (OpenAI SDK doesn't natively support this param).
     if filtered_kwargs.get("model", "").startswith("deepseek-"):
-        filtered_kwargs["thinking"] = {"type": "disabled"}
+        filtered_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
 
     t0 = time.time()
     completion = backoff_create(
