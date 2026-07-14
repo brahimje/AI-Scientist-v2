@@ -128,6 +128,22 @@ def parse_arguments():
         action="store_true",
         help="If set, skip the review process",
     )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Path to an experiment directory to resume from (e.g. experiments/2026-07-14_..._attempt_0)",
+    )
+    parser.add_argument(
+        "--skip_plotting",
+        action="store_true",
+        help="If set, skip plot aggregation and go straight to writeup",
+    )
+    parser.add_argument(
+        "--skip_experiments",
+        action="store_true",
+        help="If set, skip experiments and go straight to plotting + writeup",
+    )
     return parser.parse_args()
 
 
@@ -188,81 +204,97 @@ if __name__ == "__main__":
     available_gpus = get_available_gpus()
     print(f"Using GPUs: {available_gpus}")
 
-    with open(args.load_ideas, "r") as f:
-        ideas = json.load(f)
-        print(f"Loaded {len(ideas)} pregenerated ideas from {args.load_ideas}")
-
-    idea = ideas[args.idea_idx]
-
-    date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    idea_dir = f"experiments/{date}_{idea['Name']}_attempt_{args.attempt_id}"
-    print(f"Results will be saved in {idea_dir}")
-    os.makedirs(idea_dir, exist_ok=True)
-
-    # Convert idea json to markdown file
-    idea_path_md = osp.join(idea_dir, "idea.md")
-
-    # If load_code is True, get the Python file with same name as JSON
-    code = None
-    if args.load_code:
-        code_path = args.load_ideas.rsplit(".", 1)[0] + ".py"
-        if os.path.exists(code_path):
-            with open(code_path, "r") as f:
-                code = f.read()
-        else:
-            print(f"Warning: Code file {code_path} not found")
+    # ── RESUME MODE ──
+    if args.resume is not None:
+        idea_dir = args.resume
+        print(f"🔄 Resuming experiment from: {idea_dir}")
+        if not os.path.exists(idea_dir):
+            print(f"❌ Experiment directory not found: {idea_dir}")
+            sys.exit(1)
+        idea_path_json = osp.join(idea_dir, "idea.json")
+        idea_path_md = osp.join(idea_dir, "idea.md")
     else:
-        code_path = None
+        # ── FRESH START ──
+        with open(args.load_ideas, "r") as f:
+            ideas = json.load(f)
+            print(f"Loaded {len(ideas)} pregenerated ideas from {args.load_ideas}")
 
-    idea_to_markdown(ideas[args.idea_idx], idea_path_md, code_path)
+        idea = ideas[args.idea_idx]
 
-    dataset_ref_code = None
-    if args.add_dataset_ref:
-        dataset_ref_path = "hf_dataset_reference.py"
-        if os.path.exists(dataset_ref_path):
-            with open(dataset_ref_path, "r") as f:
-                dataset_ref_code = f.read()
+        date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        idea_dir = f"experiments/{date}_{idea['Name']}_attempt_{args.attempt_id}"
+        print(f"Results will be saved in {idea_dir}")
+        os.makedirs(idea_dir, exist_ok=True)
+
+        # Convert idea json to markdown file
+        idea_path_md = osp.join(idea_dir, "idea.md")
+
+        # If load_code is True, get the Python file with same name as JSON
+        code = None
+        if args.load_code:
+            code_path = args.load_ideas.rsplit(".", 1)[0] + ".py"
+            if os.path.exists(code_path):
+                with open(code_path, "r") as f:
+                    code = f.read()
+            else:
+                print(f"Warning: Code file {code_path} not found")
         else:
-            print(f"Warning: Dataset reference file {dataset_ref_path} not found")
-            dataset_ref_code = None
+            code_path = None
 
-    if dataset_ref_code is not None and code is not None:
-        added_code = dataset_ref_code + "\n" + code
-    elif dataset_ref_code is not None and code is None:
-        added_code = dataset_ref_code
-    elif dataset_ref_code is None and code is not None:
-        added_code = code
-    else:
-        added_code = None
+        idea_to_markdown(ideas[args.idea_idx], idea_path_md, code_path)
 
-    print(added_code)
+        dataset_ref_code = None
+        if args.add_dataset_ref:
+            dataset_ref_path = "hf_dataset_reference.py"
+            if os.path.exists(dataset_ref_path):
+                with open(dataset_ref_path, "r") as f:
+                    dataset_ref_code = f.read()
+            else:
+                print(f"Warning: Dataset reference file {dataset_ref_path} not found")
+                dataset_ref_code = None
 
-    # Add code to idea json if it was loaded
-    if added_code is not None:
-        ideas[args.idea_idx]["Code"] = added_code
+        if dataset_ref_code is not None and code is not None:
+            added_code = dataset_ref_code + "\n" + code
+        elif dataset_ref_code is not None and code is None:
+            added_code = dataset_ref_code
+        elif dataset_ref_code is None and code is not None:
+            added_code = code
+        else:
+            added_code = None
 
-    # Store raw idea json
-    idea_path_json = osp.join(idea_dir, "idea.json")
-    with open(idea_path_json, "w") as f:
-        json.dump(ideas[args.idea_idx], f, indent=4)
+        print(added_code)
 
-    config_path = "bfts_config.yaml"
-    idea_config_path = edit_bfts_config_file(
-        config_path,
-        idea_dir,
-        idea_path_json,
-    )
+        # Add code to idea json if it was loaded
+        if added_code is not None:
+            ideas[args.idea_idx]["Code"] = added_code
 
-    perform_experiments_bfts(idea_config_path)
-    experiment_results_dir = osp.join(idea_dir, "logs/0-run/experiment_results")
-    if os.path.exists(experiment_results_dir):
-        shutil.copytree(
-            experiment_results_dir,
-            osp.join(idea_dir, "experiment_results"),
-            dirs_exist_ok=True,
+        # Store raw idea json
+        idea_path_json = osp.join(idea_dir, "idea.json")
+        with open(idea_path_json, "w") as f:
+            json.dump(ideas[args.idea_idx], f, indent=4)
+
+        config_path = "bfts_config.yaml"
+        idea_config_path = edit_bfts_config_file(
+            config_path,
+            idea_dir,
+            idea_path_json,
         )
 
-    aggregate_plots(base_folder=idea_dir, model=args.model_agg_plots)
+        # ── EXPERIMENTS ──
+        perform_experiments_bfts(idea_config_path)
+        experiment_results_dir = osp.join(idea_dir, "logs/0-run/experiment_results")
+        if os.path.exists(experiment_results_dir):
+            shutil.copytree(
+                experiment_results_dir,
+                osp.join(idea_dir, "experiment_results"),
+                dirs_exist_ok=True,
+            )
+
+    # ── PLOT AGGREGATION ──
+    if not args.skip_plotting:
+        aggregate_plots(base_folder=idea_dir, model=args.model_agg_plots)
+    else:
+        print("⏭️ Skipping plot aggregation (--skip_plotting)")
 
     exp_results_dir = osp.join(idea_dir, "experiment_results")
     if osp.exists(exp_results_dir):
