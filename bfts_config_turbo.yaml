@@ -1,0 +1,67 @@
+# ⚡ TURBO config — Full pipeline in ~30-60 min
+# Overrides bfts_config.yaml for maximum speed
+
+# path to the task data directory
+data_dir: "data"
+preprocess_data: False
+
+goal: null
+eval: null
+
+log_dir: logs
+workspace_dir: workspaces
+
+copy_data: True
+
+exp_name: run
+
+exec:
+  timeout: 600  # 10 min max per code run (down from 3600)
+  agent_file_name: runfile.py
+  format_tb_ipython: False
+
+generate_report: True
+report:
+  model: deepseek-v4-flash
+  temp: 1.0
+
+experiment:
+  num_syn_datasets: 1
+
+debug:
+  stage4: False
+
+agent:
+  type: parallel
+  num_workers: 1         # Single process (no multiprocessing overhead)
+  stages:
+    stage1_max_iters: 10  # Only 10 attempts (was 30)
+    stage2_max_iters: 5
+    stage3_max_iters: 0   # Skip stage 3-4
+    stage4_max_iters: 0
+  steps: 1                # Single step per stage
+  k_fold_validation: 1
+  multi_seed_eval:
+    num_seeds: 1
+  expose_prediction: False
+  data_preview: False
+
+  code:
+    model: deepseek-v4-flash  # Fastest model
+    temp: 1.0
+    max_tokens: 8000
+
+  feedback:
+    model: deepseek-v4-flash
+    temp: 0.5
+    max_tokens: 8192
+
+  vlm_feedback:
+    model: deepseek-v4-flash
+    temp: 0.5
+    max_tokens: null
+
+  search:
+    max_debug_depth: 1     # Only debug once (was 3)
+    debug_prob: 0.3        # Lower debug probability
+    num_drafts: 1
