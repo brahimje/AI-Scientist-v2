@@ -182,7 +182,7 @@ def generate_temp_free_idea(
 
                 # Parse the LLM's response
                 try:
-                    # Use regular expressions to extract the components
+                    # Try strict format first: ACTION: ... ARGUMENTS: ...
                     action_pattern = r"ACTION:\s*(.*?)\s*ARGUMENTS:"
                     arguments_pattern = r"ARGUMENTS:\s*(.*?)(?:$|\nTHOUGHT:|\n$)"
 
@@ -194,7 +194,28 @@ def generate_temp_free_idea(
                     )
 
                     if not all([action_match, arguments_match]):
-                        raise ValueError("Failed to parse the LLM response.")
+                        # Fallback: try to extract JSON directly from response
+                        if reflection_round == num_reflections - 1:
+                            # Last chance: find any JSON with "idea" key
+                            json_pattern = r'```(?:json)?\s*(\{.*?"idea".*?\})\s*```'
+                            json_matches = re.findall(json_pattern, response_text, re.DOTALL)
+                            if not json_matches:
+                                # Broader: any {...} containing "idea"
+                                json_pattern = r'\{[^{}]*"idea"[^{}]*\{.*?\}[^{}]*\}'
+                                json_matches = re.findall(json_pattern, response_text, re.DOTALL)
+                            if json_matches:
+                                try:
+                                    parsed = json.loads(json_matches[0])
+                                    idea = parsed.get("idea")
+                                    if idea:
+                                        idea_str_archive.append(json.dumps(idea))
+                                        print(f"Proposal finalized (fallback): {idea.get('Title', 'Untitled')}")
+                                        idea_finalized = True
+                                        break
+                                except json.JSONDecodeError:
+                                    pass
+                        if not idea_finalized:
+                            raise ValueError("Failed to parse the LLM response.")
 
                     action = action_match.group(1).strip()
                     arguments_text = arguments_match.group(1).strip()
