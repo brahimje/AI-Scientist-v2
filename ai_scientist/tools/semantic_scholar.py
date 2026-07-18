@@ -69,7 +69,9 @@ class SemanticScholarSearchTool(BaseTool):
             params={
                 "query": query,
                 "limit": self.max_results,
-                "fields": "title,authors,venue,year,abstract,citationCount",
+                "fields": "title,authors,venue,year,abstract,citationCount,externalIds,publicationTypes",
+                "year": "2022-2025",  # Prioritize recent papers (S2 indexes arXiv, IEEE, ACM, etc.)
+                "sort": "citationCount:desc",  # Most impactful first
             },
         )
         print(f"Response Status Code: {rsp.status_code}")
@@ -96,9 +98,15 @@ class SemanticScholarSearchTool(BaseTool):
             authors = ", ".join(
                 [author.get("name", "Unknown") for author in paper.get("authors", [])]
             )
+            # Show venue and ArXiv link for SOTA tracking
+            venue = paper.get("venue", "Unknown Venue")
+            external_ids = paper.get("externalIds", {})
+            arxiv_id = external_ids.get("ArXiv", "")
+            arxiv_link = f" [arXiv:{arxiv_id}]" if arxiv_id else ""
+            
             paper_strings.append(
-                f"""{i + 1}: {paper.get("title", "Unknown Title")}. {authors}. {paper.get("venue", "Unknown Venue")}, {paper.get("year", "Unknown Year")}.
-Number of citations: {paper.get("citationCount", "N/A")}
+                f"""{i + 1}: {paper.get("title", "Unknown Title")}. {authors}. {venue}, {paper.get("year", "Unknown Year")}{arxiv_link}.
+Citations: {paper.get("citationCount", "N/A")}
 Abstract: {paper.get("abstract", "No abstract available.")}"""
             )
         return "\n\n".join(paper_strings)

@@ -60,6 +60,8 @@ tool_names_str = ", ".join(tool_names)
 
 system_prompt = f"""You are an experienced AI researcher who aims to propose high-impact research ideas resembling exciting grant proposals. Feel free to propose any novel ideas or experiments; make sure they are novel. Be very creative and think out of the box. Each proposal should stem from a simple and elegant question, observation, or hypothesis about the topic. For example, they could involve very interesting and simple interventions or investigations that explore new possibilities or challenge existing assumptions. Clearly clarify how the proposal distinguishes from the existing literature.
 
+CRITICAL: Focus on STATE-OF-THE-ART (2024-2025) research. When searching literature, ALWAYS include year keywords like "2024" or "2025" in your queries. Search for papers from top venues (NeurIPS, ICML, ICLR, CVPR, USENIX, IEEE S&P, CCS, NDSS). The proposals must be cutting-edge and address open problems that are actively researched TODAY. Avoid proposing ideas that were solved before 2022.
+
 Ensure that the proposal does not require resources beyond what an academic lab could afford. These proposals should lead to papers that are publishable at top ML conferences.
 
 You have access to the following tools:
@@ -93,7 +95,7 @@ IDEA JSON:
 
 Ensure the JSON is properly formatted for automatic parsing.
 
-Note: You should perform at least one literature search before finalizing your idea to ensure it is well-informed by existing research."""
+Note: You should perform at least TWO literature searches with different SOTA-focused queries (e.g., "Android malware detection 2024", "adversarial android security 2025") before finalizing your idea to ensure it is well-informed by existing research and addresses truly open problems."""
 
 # Define the initial idea generation prompt
 idea_generation_prompt = """{workshop_description}
