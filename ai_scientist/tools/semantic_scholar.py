@@ -70,7 +70,7 @@ class SemanticScholarSearchTool(BaseTool):
                 "query": query,
                 "limit": self.max_results,
                 "fields": "title,authors,venue,year,abstract,citationCount,externalIds,publicationTypes",
-                "year": "2022-2025",  # Prioritize recent papers (S2 indexes arXiv, IEEE, ACM, etc.)
+                "year": "2024-2026",  # Only cutting-edge recent papers
                 "sort": "citationCount:desc",  # Most impactful first
             },
         )
