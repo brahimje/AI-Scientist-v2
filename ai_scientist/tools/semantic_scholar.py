@@ -70,7 +70,7 @@ class SemanticScholarSearchTool(BaseTool):
                 "query": query,
                 "limit": self.max_results,
                 "fields": "title,authors,venue,year,abstract,citationCount,externalIds,publicationTypes",
-                "year": "2024-2026",  # Only cutting-edge recent papers
+                "year": "2026-2026",  # Only this year's most cutting-edge research
                 "sort": "citationCount:desc",  # Most impactful first
             },
         )
