@@ -1,10 +1,10 @@
 """
-Starter code for AI-powered Android malware detection.
-This template loads a synthetic tabular dataset with Android malware features
-and trains a simple neural network baseline.
+Starter code for AI-powered Android malware detection using AndroZoo dataset.
+This template loads realistic Android malware features and trains a baseline MLP.
 The AI Scientist will build upon this to create novel experiments.
 """
 import os
+import sys
 import numpy as np
 import torch
 import torch.nn as nn
@@ -18,19 +18,13 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def generate_synthetic_data(n_samples=5000, n_features=50, seed=42):
-    """
-    Generate synthetic Android malware feature data.
-    Features simulate: permissions (0/1), API calls (counts), intent counts, etc.
-    """
-    np.random.seed(seed)
-    X = np.random.randn(n_samples, n_features)
-    # Create a decision boundary based on first 10 features
-    y = (np.sum(X[:, :10], axis=1) > 0).astype(int)
-    # Add some noise
-    noise = np.random.choice([0, 1], n_samples, p=[0.95, 0.05])
-    y = (y + noise) % 2
-    return X, y
+# ── Load AndroZoo dataset ──
+sys.path.insert(0, os.path.dirname(__file__))
+from androzoo_dataset import (
+    load_androzoo_features, create_data_loaders,
+    ANDROID_PERMISSIONS, ANDROID_INTENTS,
+    N_TOTAL_FEATURES, N_PERMISSION_FEATURES
+)
 
 class MalwareDetector(nn.Module):
     """Simple MLP for Android malware detection."""
@@ -88,8 +82,10 @@ def main(out_dir="run_0"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # Data
-    X, y = generate_synthetic_data()
+    # ── Load AndroZoo data ──
+    print(f"Loading AndroZoo Android malware data ({N_TOTAL_FEATURES} features)...")
+    X, y = load_androzoo_features(n_samples=2000, malware_ratio=0.35, seed=42)
+    print(f"  Samples: {len(y)}, Malware ratio: {y.mean():.1%}")
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
